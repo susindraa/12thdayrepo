@@ -7,8 +7,9 @@ pipeline {
   }
 
   environment {
-    SONAR_URL = 'http://34.201.116.83:9000'
-    DOCKER_IMAGE = "abhishekf5/ultimate-cicd:${BUILD_NUMBER}"
+    // Default values for environment variables
+    SONAR_URL = env.SONAR_URL ?: 'http://34.201.116.83:9000'
+    DOCKER_IMAGE = env.DOCKER_IMAGE ?: "abhishekf5/ultimate-cicd:${BUILD_NUMBER}"
     GIT_REPO_NAME = "Jenkins-Zero-To-Hero-main"
     GIT_USER_NAME = "susindraa"
   }
@@ -17,18 +18,30 @@ pipeline {
     stage('Checkout') {
       steps {
         echo '✅ Checkout Stage Started'
-        // Simulate or uncomment when repo is set
-        // git branch: 'main', url: 'https://github.com/iam-veeramalla/Jenkins-Zero-To-Hero.git'
-        sh 'echo Git checkout simulated for demo'
+        script {
+          try {
+            git branch: 'main', url: 'https://github.com/susindraa/12thdayrepo.git'
+          } catch (err) {
+            echo "❌ Failed to checkout repository: ${err}"
+            throw err
+          }
+        }
       }
     }
 
     stage('Build and Test') {
       steps {
         echo '✅ Building Maven Project'
-dir('spring-boot-app'){
-        sh 'mvn clean package'
-}
+        dir('spring-boot-app') {
+          script {
+            try {
+              sh 'mvn clean package'
+            } catch (err) {
+              echo "❌ Build failed: ${err}"
+              throw err
+            }
+          }
+        }
       }
     }
 
@@ -36,11 +49,20 @@ dir('spring-boot-app'){
       steps {
         echo '✅ Running SonarQube Analysis'
         withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
-          sh """
-            mvn sonar:sonar \
-              -Dsonar.login=${SONAR_AUTH_TOKEN} \
-              -Dsonar.host.url=${SONAR_URL}
-          """
+          dir('spring-boot-app') {
+            script {
+              try {
+                sh """
+                  mvn sonar:sonar \
+                    -Dsonar.login=${SONAR_AUTH_TOKEN} \
+                    -Dsonar.host.url=${SONAR_URL}
+                """
+              } catch (err) {
+                echo "❌ SonarQube analysis failed: ${err}"
+                throw err
+              }
+            }
+          }
         }
       }
     }
@@ -51,11 +73,16 @@ dir('spring-boot-app'){
       }
       steps {
         echo '✅ Building and Pushing Docker Image'
-        sh "docker build -t ${DOCKER_IMAGE} ."
         script {
-          def dockerImage = docker.image("${DOCKER_IMAGE}")
-          docker.withRegistry('https://index.docker.io/v1/', REGISTRY_CREDENTIALS) {
-            dockerImage.push()
+          try {
+            sh "docker build -t ${DOCKER_IMAGE} -f spring-boot-app/Dockerfile ."
+            def dockerImage = docker.image("${DOCKER_IMAGE}")
+            docker.withRegistry('https://index.docker.io/v1/', REGISTRY_CREDENTIALS) {
+              dockerImage.push()
+            }
+          } catch (err) {
+            echo "❌ Docker build or push failed: ${err}"
+            throw err
           }
         }
       }
@@ -66,14 +93,21 @@ dir('spring-boot-app'){
         echo '✅ Updating Deployment Manifest and Committing to GitHub'
         withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
           dir('spring-boot-app-manifests') {
-            sh """
-              git config user.email "susindra123@gmail.com"
-              git config user.name "susindraa"
-              sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" deployment.yml
-              git add deployment.yml
-              git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-              git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
-            """
+            script {
+              try {
+                sh """
+                  git config user.email "susindra123@gmail.com"
+                  git config user.name "susindraa"
+                  sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" deployment.yml
+                  git add deployment.yml
+                  git commit -m "Update deployment image to version ${BUILD_NUMBER}" || echo "No changes to commit"
+                  git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+                """
+              } catch (err) {
+                echo "❌ Failed to update deployment file: ${err}"
+                throw err
+              }
+            }
           }
         }
       }
