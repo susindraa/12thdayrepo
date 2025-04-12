@@ -9,8 +9,8 @@ pipeline {
   environment {
     SONAR_URL = 'http://34.201.116.83:9000'
     DOCKER_IMAGE = "abhishekf5/ultimate-cicd:${BUILD_NUMBER}"
-    GIT_REPO_NAME = "Jenkins-Zero-To-Hero"
-    GIT_USER_NAME = "iam-veeramalla"
+    GIT_REPO_NAME = "Jenkins-Zero-To-Hero-main"
+    GIT_USER_NAME = "susindraa"
   }
 
   stages {
@@ -26,6 +26,7 @@ pipeline {
     stage('Build and Test') {
       steps {
         echo '✅ Building Maven Project'
+dir('spring-boot-app')
         sh 'mvn clean package'
       }
     }
