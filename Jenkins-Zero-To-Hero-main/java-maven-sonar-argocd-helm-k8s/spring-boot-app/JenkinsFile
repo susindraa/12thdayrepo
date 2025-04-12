@@ -26,8 +26,9 @@ pipeline {
     stage('Build and Test') {
       steps {
         echo '✅ Building Maven Project'
-dir('spring-boot-app')
+dir('spring-boot-app'){
         sh 'mvn clean package'
+}
       }
     }
 
