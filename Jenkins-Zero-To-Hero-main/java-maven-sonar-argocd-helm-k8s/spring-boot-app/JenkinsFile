@@ -18,7 +18,7 @@ pipeline {
       steps {
         echo '✅ Checkout Stage Started'
         // Simulate or uncomment when repo is set
-        // git branch: 'main', url: 'https://github.com/susindraa/12thdayrepo.git'
+        // git branch: 'main', url: 'https://github.com/iam-veeramalla/Jenkins-Zero-To-Hero.git'
         sh 'echo Git checkout simulated for demo'
       }
     }
