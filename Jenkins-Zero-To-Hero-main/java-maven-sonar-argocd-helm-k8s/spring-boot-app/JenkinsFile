@@ -6,15 +6,25 @@ pipeline {
     }
   }
 
+  // Define default values using a script block
   environment {
-    // Default values for environment variables
-    SONAR_URL = env.SONAR_URL ?: 'http://34.201.116.83:9000'
-    DOCKER_IMAGE = env.DOCKER_IMAGE ?: "abhishekf5/ultimate-cicd:${BUILD_NUMBER}"
+    SONAR_URL = '${DEFAULT_SONAR_URL}'
+    DOCKER_IMAGE = '${DEFAULT_DOCKER_IMAGE}'
     GIT_REPO_NAME = "Jenkins-Zero-To-Hero-main"
     GIT_USER_NAME = "susindraa"
   }
 
   stages {
+    stage('Initialize') {
+      steps {
+        script {
+          // Set default values for environment variables
+          DEFAULT_SONAR_URL = env.SONAR_URL ?: 'http://34.201.116.83:9000'
+          DEFAULT_DOCKER_IMAGE = env.DOCKER_IMAGE ?: "abhishekf5/ultimate-cicd:${BUILD_NUMBER}"
+        }
+      }
+    }
+
     stage('Checkout') {
       steps {
         echo '✅ Checkout Stage Started'
