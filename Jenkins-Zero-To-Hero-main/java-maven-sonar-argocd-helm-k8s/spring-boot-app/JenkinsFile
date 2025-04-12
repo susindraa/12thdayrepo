@@ -17,7 +17,7 @@ pipeline {
     stage('Checkout') {
       steps {
         echo '✅ Checkout Stage Started'
-        // Uncomment below line when actual repo is ready
+        // Simulate or uncomment when repo is set
         // git branch: 'main', url: 'https://github.com/iam-veeramalla/Jenkins-Zero-To-Hero.git'
         sh 'echo Git checkout simulated for demo'
       }
@@ -26,9 +26,7 @@ pipeline {
     stage('Build and Test') {
       steps {
         echo '✅ Building Maven Project'
-        dir('spring-boot-app') {
-          sh 'mvn clean package'
-        }
+        sh 'mvn clean package'
       }
     }
 
@@ -36,13 +34,11 @@ pipeline {
       steps {
         echo '✅ Running SonarQube Analysis'
         withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
-          dir('spring-boot-app') {
-            sh """
-              mvn sonar:sonar \
-                -Dsonar.login=${SONAR_AUTH_TOKEN} \
-                -Dsonar.host.url=${SONAR_URL}
-            """
-          }
+          sh """
+            mvn sonar:sonar \
+              -Dsonar.login=${SONAR_AUTH_TOKEN} \
+              -Dsonar.host.url=${SONAR_URL}
+          """
         }
       }
     }
@@ -53,13 +49,11 @@ pipeline {
       }
       steps {
         echo '✅ Building and Pushing Docker Image'
-        dir('spring-boot-app') {
-          sh "docker build -t ${DOCKER_IMAGE} ."
-          script {
-            def dockerImage = docker.image("${DOCKER_IMAGE}")
-            docker.withRegistry('https://index.docker.io/v1/', REGISTRY_CREDENTIALS) {
-              dockerImage.push()
-            }
+        sh "docker build -t ${DOCKER_IMAGE} ."
+        script {
+          def dockerImage = docker.image("${DOCKER_IMAGE}")
+          docker.withRegistry('https://index.docker.io/v1/', REGISTRY_CREDENTIALS) {
+            dockerImage.push()
           }
         }
       }
